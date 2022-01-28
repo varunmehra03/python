@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# Script to help setup local virtual environment and install the required python packages
+
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
+export PATH=$PATH:$HOME/.local/bin/
+export PYTHONUNBUFFERED=TRUE
+
+#If environment variable WORKSPACE is not set, use the current directory
+if [ -z "${WORKSPACE}" ] ; then
+   WORKSPACE="$(pwd)"
+fi
+
+virtual_env_path=${WORKSPACE}/CyAppPy3;
+smw_app_path=${WORKSPACE}/app;
+
+enable_smw_pypi_server() {
+    if [ -e ~/.pip ]
+    then
+        echo "~/.pip directory exists"
+    else
+        mkdir ~/.pip
+    fi
+
+	PIP_CONF="
+[global]
+index-url = https://pypi.python.org/simple/
+trusted-host = admin.smw.net
+extra-index-url = http://admin.smw.net:8081/repository/smw-pypi/simple/
+
+
+"
+	echo "$PIP_CONF" > ~/.pip/pip.conf
+	echo "Nexus pypi server enabled...."
+}
+
+enable_smw_pypi_server
+
+echo "Activating the python virtual environment at ${virtual_env_path} ..." ;
+
+if [ -e "${virtual_env_path}" ] ; then
+	echo "Activated existing virtualenv at ${virtual_env_path}" ;
+	. "${virtual_env_path}/bin/activate" ;
+else
+	echo "Creating new virtualenv ..." ;
+	cd "${WORKSPACE}" ;
+    python3.7 -m venv CyAppPy3 ;
+    . "${virtual_env_path}/bin/activate" ;
+	echo "Activated using new virtualenv at ${virtual_env_path}" ;
+fi
+
+if [ $? -eq 0 ]; then
+    echo "Installing python dependencies for app" ;
+    pip install --upgrade pip
+    pip install wheel;
+    pip install -r "${smw_app_path}/requirements.txt";
+else
+    echo "Failed to install python dependencies for app due to error in creating virtual environment";
+fi
